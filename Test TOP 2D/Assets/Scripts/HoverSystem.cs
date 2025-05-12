@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using DG.Tweening;
+using Unity.VisualScripting;
 
 public class HoverSystem : MonoBehaviour
 {
@@ -18,10 +19,10 @@ public class HoverSystem : MonoBehaviour
     [SerializeField] private GameObject cropObjectPrefab;
     private readonly Dictionary<Vector3Int, GameObject> cropDictionnary = new();
 
+    [Header("Cursor")]
     [SerializeField] private GameObject cursor;
-    
-
-    private Vector3Int lastHoveredTilePos;
+    [SerializeField] private int cursorReach = 15;
+    [SerializeField] private int cursorReachDisplay = 18;
 
     void OnEnable()
     {
@@ -33,7 +34,7 @@ public class HoverSystem : MonoBehaviour
         InputPolling.OnAttackEvent -= OnClick;
     }
 
-    void Update()
+    void FixedUpdate()
     {
         highlightTile();
     }
@@ -51,14 +52,36 @@ public class HoverSystem : MonoBehaviour
         return cellPosition;
     }
 
+    private DistanceType GetDistanceType() 
+    {
+        Vector3Int hoverPosition = getMousePosOnGrid();
+        Vector3Int playerPosition = groundTilemap.WorldToCell(player.transform.position);
+        playerPosition.z = 0; // Ensure z is set to 0
+
+        float distance = Vector3Int.Distance(playerPosition, hoverPosition);
+
+        if (distance < cursorReach)
+            return DistanceType.Interactable;
+        else if (distance < cursorReachDisplay)
+            return DistanceType.Examinable;
+        else
+            return DistanceType.Far;
+    }
+
     private void highlightTile()
     {
-        // Get the mouse position in world coordinates
         Vector3Int hoverPosition = getMousePosOnGrid();
+        DistanceType distanceType = GetDistanceType();
 
+        // Check if the cursor is at Interactable distance
+        cursor.GetComponent<SpriteRenderer>().color = (distanceType == DistanceType.Interactable) ? Color.white : Color.grey;
+
+        // Check if the cursor is at Examinable distance
+        cursor.GetComponent<SpriteRenderer>().enabled = (distanceType == DistanceType.Interactable || distanceType == DistanceType.Examinable);
         
-
-        cursor.transform.DOMove(groundTilemap.GetCellCenterWorld(hoverPosition), 0.1f);
+        if(cursor.activeSelf)
+            cursor.transform.DOMove(groundTilemap.GetCellCenterWorld(hoverPosition), 0.1f);
+        
 
         // Debug.Log("Hover Position: " + hoverPosition);
         
@@ -68,6 +91,9 @@ public class HoverSystem : MonoBehaviour
     {
         Debug.Log("Clicked on tilemap");
         Vector3Int clickedPosition = getMousePosOnGrid();
+
+        if(GetDistanceType() != DistanceType.Interactable)
+            return;
 
         // Check if the clicked tile is farmland
         if (!farmlandDictionnary.ContainsKey(clickedPosition))
@@ -84,5 +110,12 @@ public class HoverSystem : MonoBehaviour
             cropDictionnary.Add(clickedPosition, cropObject);
             return;
         }
+    }
+
+    private enum DistanceType
+    {
+        Interactable,
+        Examinable,
+        Far
     }
 }
