@@ -17,6 +17,7 @@ public class InputPolling : MonoBehaviour
     };
 
     public static event Action OnAttackEvent;
+    public static event Action<bool> OnHotbarScrollEvent;
 
     public static InputStruct inputStruct;
 
@@ -47,5 +48,17 @@ public class InputPolling : MonoBehaviour
     {
         OnAttackEvent?.Invoke();
         // Debug.Log("Attack performed");
+    }
+
+    void OnNext()
+    {
+        OnHotbarScrollEvent?.Invoke(true);
+        // Debug.Log("Next hotbar slot");
+    }
+
+    void OnPrevious()
+    {
+        OnHotbarScrollEvent?.Invoke(false);
+        // Debug.Log("Previous hotbar slot");
     }
 }
