@@ -12,8 +12,9 @@ public class HoverSystem : MonoBehaviour
     [SerializeField] private Tilemap groundTilemap;
 
     [Header("Farmland")]
-    [SerializeField] private GameObject farmlandObjectPrefab;
-    private readonly Dictionary<Vector3Int, GameObject> farmlandDictionnary = new();
+    [SerializeField] private Tilemap farmlandTilemap;
+    [SerializeField] private TileBase farmlandTile;
+    private readonly Dictionary<Vector3Int, FarmlandData> farmlandDictionnary = new();
 
     [Header("Crop")]
     [SerializeField] private GameObject cropObjectPrefab;
@@ -98,8 +99,12 @@ public class HoverSystem : MonoBehaviour
         // Check if the clicked tile is farmland
         if (!farmlandDictionnary.ContainsKey(clickedPosition))
         {
-            GameObject farmlandObject = Instantiate(farmlandObjectPrefab, groundTilemap.GetCellCenterWorld(clickedPosition), Quaternion.identity);
-            farmlandDictionnary.Add(clickedPosition, farmlandObject);
+            // Check if the clicked tile is farmland
+            if (farmlandTilemap.GetTile(clickedPosition) != null)
+                return;
+            
+            farmlandTilemap.SetTile(clickedPosition, farmlandTile);
+            farmlandDictionnary.Add(clickedPosition, new FarmlandData(clickedPosition));
             return;
         } else  
         {
@@ -117,5 +122,15 @@ public class HoverSystem : MonoBehaviour
         Interactable,
         Examinable,
         Far
+    }
+
+    private class FarmlandData
+    {
+        public Vector3Int Position { get; }
+
+        public FarmlandData(Vector3Int position)
+        {
+            Position = position;
+        }
     }
 }
